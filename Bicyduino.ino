@@ -1,3 +1,27 @@
+//ILI9340 library from Adafruit
+#include "SPI.h"
+#include "Adafruit_GFX.h"
+#include "Adafruit_ILI9340.h"
+
+/////////////////
+/////DISPLAY/////
+/////////////////
+#if defined(__SAM3X8E__)
+    #undef __FlashStringHelper::F(string_literal)
+    #define F(string_literal) string_literal
+#endif
+
+//SPI Pin ; those are for Arduino UNO
+#define _sclk 13
+#define _miso 12
+#define _mosi 11
+#define _cs 10
+#define _dc 9
+#define _rst 8
+
+Adafruit_ILI9340 tft = Adafruit_ILI9340(_cs, _dc, _rst);
+/////////////END DISPLAY///////////
+
 unsigned long distance;
 float currentSpeed,meanSpeed;
 unsigned long lastDuration, lastRising;
@@ -13,6 +37,7 @@ long diameter = 2150;
 void setup()
 {
         Serial.begin(9600);
+        tft.begin(); //Screen initialization
 	//attachInterrupt(0,UpdateSpeed,RISING);
 }
 
