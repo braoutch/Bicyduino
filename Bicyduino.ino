@@ -149,4 +149,17 @@ void Display(int raw)
              
         Serial.print("Awaken Time: ");
         Serial.println(millis());
+        
+        ///ILI9340 SCREEN
+        tft.fillScreen(ILI9340_BLACK);
+        tft.setTextColor(ILI9340_WHITE);
+	tft.setTextSize(5);
+  	tft.print("Speed : ");
+  	tft.setTextColor(ILI9340_GREEN);
+  	tft.print(currentSpeed);
+  	tft.println(" km/h");
+  	
+
+
+
 }
