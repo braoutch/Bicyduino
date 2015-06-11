@@ -41,7 +41,7 @@ extern "C" char __data_load_end[];	// end of FLASH (used to check amount of Flas
 
 unsigned long distance;
 float currentSpeed, averageSpeed;
-unsigned long lastDuration, lastRising;
+unsigned long lastDuration, lastRising, timeToDisplay;
 unsigned long lastStopMillis, lastStartMillis, timeStoppped;
 float oldSpeed, oldAverageSpeed, oldDistance, oldMinutes, oldHours;
 boolean start = false;
@@ -80,17 +80,16 @@ void setup()
 
 
 void loop() {
-  Measurement();
-  if (millis() - lastRising > 5000 && start) {
-
+  Measurement();  ///First we measure ; everything is done here.
+  
+  if (millis() - lastRising > 5000 && start) {  ///To know if we are stopped
     lastStopMillis = millis();
     currentSpeed = 0.0;
     start = false;
     Serial.println("A l'arret");
-
   }
 
-  if (millis() - lastRising < 5000 && !start)
+  if (millis() - lastRising < 5000 && !start)  ///To know if we go again
   {
     lastStartMillis = millis();
     timeStoppped = timeStoppped + lastStartMillis - lastStopMillis;
@@ -101,33 +100,36 @@ void loop() {
 
 }
 
-void Measurement()
+void Measurement()  ///Use the Hall effect sensor to measure
 {
   int raw = analogRead(A0);   // Range : 0..1024
-  //Serial.print(raw);
   if (raw > 600 && detected == false)
   {
     detected = true;
-    UpdateSpeed();
+    ///We have a measure so it's time to compute
+    UpdateSpeed();  
     UpdateMeanSpeed();
+    if(millis()>timeToDisplay){
     Display(raw);
+    timeToDisplay = timeToDisplay + 5000;
+    }
 
     ///ACCELEROMETER///
-    Wire.beginTransmission(MPU);
-    Wire.write(0x41);  // starting with register 0x41 (ACCEL_XOUT_H)
-    Wire.endTransmission(false);
-    Wire.requestFrom(MPU, 8, true); // request a total of 2*4 registers
-    Tmp = Wire.read() << 8 | Wire.read(); // 0x41 (TEMP_OUT_H) & 0x42 (TEMP_OUT_L)
-    GyX = Wire.read() << 8 | Wire.read(); // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
-    GyY = Wire.read() << 8 | Wire.read(); // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
-    GyZ = Wire.read() << 8 | Wire.read(); // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
+//    Wire.beginTransmission(MPU);
+//    Wire.write(0x41);  // starting with register 0x41 (ACCEL_XOUT_H)
+//    Wire.endTransmission(false);
+//    Wire.requestFrom(MPU, 8, true); // request a total of 2*4 registers
+//    Tmp = Wire.read() << 8 | Wire.read(); // 0x41 (TEMP_OUT_H) & 0x42 (TEMP_OUT_L)
+//    GyX = Wire.read() << 8 | Wire.read(); // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
+//    GyY = Wire.read() << 8 | Wire.read(); // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
+//    GyZ = Wire.read() << 8 | Wire.read(); // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
   }
 
   else if (raw < 600)
     detected = false;
 }
 
-void UpdateSpeed()
+void UpdateSpeed()      ///Measure speed and distance
 { ////CALL BY INTERRUPTION
   lastDuration = millis() - lastRising;
 
@@ -139,21 +141,21 @@ void UpdateSpeed()
 }
 
 
-void UpdateMeanSpeed()
+void UpdateMeanSpeed()  ///Compute average speed
 {
 
   averageSpeed = (float)distance / ((float)millis() - (float)timeStoppped);
 
 }
 
-void * ComputeDuration()
+void * ComputeDuration()  ///Compute real time spent
 {
 float totalTime = (int)millis() - (int)timeStoppped;
 hours = (totalTime/3600000);
 minutes = (totalTime/60000);
 }
 
-void Display(int raw)
+void Display(int raw)  ///Display the dynamic things
 {
   Serial.print("Speed: ");
   Serial.println(currentSpeed);
