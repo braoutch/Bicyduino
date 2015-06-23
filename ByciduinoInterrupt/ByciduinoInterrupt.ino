@@ -48,39 +48,43 @@ boolean start = false;
 boolean detected = false;
 static int hours, minutes;
 
-long diameter = 2150;
+long diameter = 2096;
 
 
 
 void setup()
 {
   Serial.begin(115200);
-attachInterrupt(2,Measurement,RISING);
-#if defined(ILI9340_RST_PIN)	// reset like Adafruit does
+  pinMode(2, INPUT_PULLUP); //Pin2 is connected to the reed switch
+  digitalWrite(2, HIGH); //Enable internal pull-up
+  attachInterrupt(0,Measurement,FALLING);
+  
+  #if defined(ILI9340_RST_PIN)	// reset like Adafruit does
   FastPin<ILI9340_RST_PIN>::setOutput();
   FastPin<ILI9340_RST_PIN>::hi();
   FastPin<ILI9340_RST_PIN>::lo();
+  
   delay(1);
+  
   FastPin<ILI9340_RST_PIN>::hi();
-#endif
+  #endif
 
   tft.begin(); //Screen initialization
-  //attachInterrupt(0,UpdateSpeed,RISING);
   InitializeScreen();
 
   /////////ACCELEROMETER////////
-  Wire.begin();
-  Wire.beginTransmission(MPU);
-  Wire.write(0x6B);  // PWR_MGMT_1 register
-  Wire.write(0);     // set to zero (wakes up the MPU-6050)
-  Wire.endTransmission(true);
+//  Wire.begin();
+//  Wire.beginTransmission(MPU);
+//  Wire.write(0x6B);  // PWR_MGMT_1 register
+//  Wire.write(0);     // set to zero (wakes up the MPU-6050)
+//  Wire.endTransmission(true);
   /////////////////////////////
 }
 
 
 
 void loop() {
-  Measurement();  ///First we measure ; everything is done here.
+  //Measurement();  ///First we measure ; everything is done here.
   
   if (millis() - lastRising > 5000 && start) {  ///To know if we are stopped
     lastStopMillis = millis();
@@ -102,16 +106,18 @@ void loop() {
 
 void Measurement()  ///Use the Hall effect sensor to measure
 {
-  int raw = analogRead(A0);   // Range : 0..1024
-  if (raw > 600 && detected == false)
-  {
-    detected = true;
-    ///We have a measure so it's time to compute
+        Serial.println(lastDuration);
+
+    lastDuration = millis() - lastRising;
+      Serial.println(lastDuration);
+  ///We have a measure so it's time to compute
     UpdateSpeed();  
     UpdateMeanSpeed();
-    if(millis()>timeToDisplay){
-    Display(raw);
-    timeToDisplay = timeToDisplay + 5000;
+    
+    if(millis()>timeToDisplay)
+    {
+      Display();
+      timeToDisplay = timeToDisplay + 5000;
     }
 
     ///ACCELEROMETER///
@@ -123,17 +129,12 @@ void Measurement()  ///Use the Hall effect sensor to measure
 //    GyX = Wire.read() << 8 | Wire.read(); // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
 //    GyY = Wire.read() << 8 | Wire.read(); // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
 //    GyZ = Wire.read() << 8 | Wire.read(); // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
-  }
+    lastRising = millis();
 
-  else if (raw < 600)
-    detected = false;
 }
 
 void UpdateSpeed()      ///Measure speed and distance
 { ////CALL BY INTERRUPTION
-  lastDuration = millis() - lastRising;
-
-  lastRising = millis();
 
   currentSpeed = (float)diameter / (float)lastDuration ;
 
@@ -155,30 +156,27 @@ hours = (totalTime/3600000);
 minutes = (totalTime/60000);
 }
 
-void Display(int raw)  ///Display the dynamic things
+void Display()  ///Display the dynamic things
 {
-  Serial.print("Speed: ");
-  Serial.println(currentSpeed);
-
-  Serial.print("last duration: ");
-  Serial.println(lastDuration);
-
-  Serial.print("Mean Speed: ");
-  Serial.println(averageSpeed);
-
-  Serial.print("Distance: ");
-  Serial.println(distance);
-
-  Serial.print("Output: ");
-  Serial.println(raw);
-
-  Serial.print(" | Tmp = "); Serial.print(Tmp / 340.00 + 36.53); //equation for temperature in degrees C from datasheet
-  Serial.print(" | GyX = "); Serial.print(GyX);
-  Serial.print(" | GyY = "); Serial.print(GyY);
-  Serial.print(" | GyZ = "); Serial.println(GyZ);
-
-  Serial.print("Awaken Time: ");
-  Serial.println(millis());
+//  Serial.print("Speed: ");
+//  Serial.println(currentSpeed);
+//
+//  Serial.print("last duration: ");
+//  Serial.println(lastDuration);
+//
+//  Serial.print("Mean Speed: ");
+//  Serial.println(averageSpeed);
+//
+//  Serial.print("Distance: ");
+//  Serial.println(distance);
+//
+//  Serial.print(" | Tmp = "); Serial.print(Tmp / 340.00 + 36.53); //equation for temperature in degrees C from datasheet
+//  Serial.print(" | GyX = "); Serial.print(GyX);
+//  Serial.print(" | GyY = "); Serial.print(GyY);
+//  Serial.print(" | GyZ = "); Serial.println(GyZ);
+//
+//  Serial.print("Awaken Time: ");
+//  Serial.println(millis());
 
   //SPEED VALUE
   tft.setCursor(0,0);
