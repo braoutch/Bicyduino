@@ -1,3 +1,7 @@
+
+//To store some data in SRAM
+include <avr/pgmspace.h>
+
 // PDQ: create LCD object (using pins in "PDQ_LI9340_config.h")
 
 //////////////////////////
@@ -38,7 +42,7 @@ extern "C" char __data_load_end[];	// end of FLASH (used to check amount of Flas
 
 /////////////END DISPLAY///////////
 ////////////////////////////////////
-
+uint8_t totalDistance;
 unsigned long distance;
 float currentSpeed, averageSpeed;
 unsigned long lastDuration, lastRising, timeToDisplay;
@@ -118,6 +122,8 @@ void Measurement()  ///Use the Hall effect sensor to measure
     {
       Display();
       timeToDisplay = timeToDisplay + 5000;
+      if(distance/1000000 > pgm_read_byte(&totalDistance))
+      totalDistance PROGMEM = pgm_read_byte(&totalDistance)+distance/1000000;
     }
 
     ///ACCELEROMETER///
