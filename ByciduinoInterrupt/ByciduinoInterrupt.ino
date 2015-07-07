@@ -1,6 +1,6 @@
 
 //To store some data in SRAM
-include <avr/pgmspace.h>
+#include <avr/pgmspace.h>
 
 // PDQ: create LCD object (using pins in "PDQ_LI9340_config.h")
 
@@ -43,7 +43,7 @@ extern "C" char __data_load_end[];	// end of FLASH (used to check amount of Flas
 /////////////END DISPLAY///////////
 ////////////////////////////////////
 uint8_t totalDistance;
-unsigned long distance;
+float distance;
 float currentSpeed, averageSpeed;
 unsigned long lastDuration, lastRising, timeToDisplay;
 unsigned long lastStopMillis, lastStartMillis, timeStoppped;
@@ -52,7 +52,7 @@ boolean start = false;
 boolean detected = false;
 static int hours, minutes;
 
-long diameter = 2096;
+float diameter = 2.096f;
 
 
 
@@ -90,14 +90,14 @@ void setup()
 void loop() {
   //Measurement();  ///First we measure ; everything is done here.
   
-  if (millis() - lastRising > 5000 && start) {  ///To know if we are stopped
+  if (millis() - lastRising > 6000 && start) {  ///To know if we are stopped
     lastStopMillis = millis();
     currentSpeed = 0.0;
     start = false;
     Serial.println("A l'arret");
   }
 
-  if (millis() - lastRising < 5000 && !start)  ///To know if we go again
+  if (millis() - lastRising < 6000 && !start)  ///To know if we go again
   {
     lastStartMillis = millis();
     timeStoppped = timeStoppped + lastStartMillis - lastStopMillis;
@@ -110,11 +110,13 @@ void loop() {
 
 void Measurement()  ///Use the Hall effect sensor to measure
 {
-        Serial.println(lastDuration);
+    
 
     lastDuration = millis() - lastRising;
-      Serial.println(lastDuration);
-  ///We have a measure so it's time to compute
+    if(lastDuration > 60){
+    Serial.print("lastDuration : ");
+    Serial.println(lastDuration);
+    //We have a measure so it's time to compute
     UpdateSpeed();  
     UpdateMeanSpeed();
     
@@ -122,8 +124,8 @@ void Measurement()  ///Use the Hall effect sensor to measure
     {
       Display();
       timeToDisplay = timeToDisplay + 5000;
-      if(distance/1000000 > pgm_read_byte(&totalDistance))
-      totalDistance PROGMEM = pgm_read_byte(&totalDistance)+distance/1000000;
+      //if(distance/1000000 > pgm_read_byte(&totalDistance))
+      //totalDistance PROGMEM = pgm_read_byte(&totalDistance)+distance/1000000;
     }
 
     ///ACCELEROMETER///
@@ -136,14 +138,15 @@ void Measurement()  ///Use the Hall effect sensor to measure
 //    GyY = Wire.read() << 8 | Wire.read(); // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
 //    GyZ = Wire.read() << 8 | Wire.read(); // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
     lastRising = millis();
-
+    }
 }
 
 void UpdateSpeed()      ///Measure speed and distance
 { ////CALL BY INTERRUPTION
 
-  currentSpeed = (float)diameter / (float)lastDuration ;
-
+  currentSpeed = 3.6f* diameter / ((float)lastDuration/1000) ;
+  Serial.print("currentSpeed : ");
+  Serial.println(currentSpeed);
   distance = distance + diameter;
 }
 
@@ -151,7 +154,7 @@ void UpdateSpeed()      ///Measure speed and distance
 void UpdateMeanSpeed()  ///Compute average speed
 {
 
-  averageSpeed = (float)distance / ((float)millis() - (float)timeStoppped);
+  averageSpeed = 3600*(float)distance / (float)(millis() - timeStoppped);
 
 }
 
@@ -201,8 +204,8 @@ void Display()  ///Display the dynamic things
   tft.print(oldDistance);
   tft.setCursor(0,100);
   tft.setTextColor(ILI9340_GREEN);
-  tft.print(distance/1000000);
-  oldDistance = distance/1000000;
+  tft.print(distance/1000);
+  oldDistance = distance/1000;
   
   //DURATION VALUE
   ComputeDuration();
