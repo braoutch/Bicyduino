@@ -50,7 +50,7 @@ unsigned long lastStopMillis, lastStartMillis, timeStoppped;
 float oldSpeed, oldAverageSpeed, oldDistance, oldMinutes, oldHours;
 boolean start = false;
 boolean detected = false;
-static int hours, minutes;
+int hours, minutes;
 
 float diameter = 2.096f;
 
@@ -95,6 +95,7 @@ void loop() {
     currentSpeed = 0.0;
     start = false;
     Serial.println("A l'arret");
+    Display();
   }
 
   if (millis() - lastRising < 6000 && !start)  ///To know if we go again
@@ -158,11 +159,20 @@ void UpdateMeanSpeed()  ///Compute average speed
 
 }
 
-void * ComputeDuration()  ///Compute real time spent
+void ComputeDuration()  ///Compute real time spent
 {
-float totalTime = (int)millis() - (int)timeStoppped;
-hours = (totalTime/3600000);
+float totalTime = millis() - timeStoppped;
 minutes = (totalTime/60000);
+if(minutes >= 60)
+{
+  hours = (int)(totalTime/3600000);
+  minutes = minutes - (hours * 60);
+}
+else
+{
+  hours = 0;
+}
+
 }
 
 void Display()  ///Display the dynamic things
