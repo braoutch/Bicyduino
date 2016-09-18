@@ -24,9 +24,9 @@ int16_t Tmp, GyX, GyY, GyZ; //Accelerometer datas
 
 
 //SPI Pin ; those are for Arduino UNO
-//#define _sclk 13
-//#define _miso 12
-//#define _mosi 11
+#define _sclk 15
+#define _miso 14
+#define _mosi 16
 #define	ILI9340_CS_PIN		10			// <= /CS pin (chip-select, LOW to get attention of ILI9340, HIGH and it ignores SPI bus)
 #define	ILI9340_DC_PIN		9			// <= DC pin (1=data or 0=command indicator line) also called RS
 #define	ILI9340_RST_PIN		8
@@ -46,11 +46,12 @@ uint8_t totalDistance;
 float distance;
 float currentSpeed, averageSpeed;
 unsigned long lastDuration, lastRising, timeToDisplay;
-unsigned long lastStopMillis, lastStartMillis, timeStoppped;
-float oldSpeed, oldAverageSpeed, oldDistance, oldMinutes, oldHours;
+unsigned long lastStopMillis, lastStartMillis, timeStoppped, millisVal,millisVal2;
+float oldSpeed, oldAverageSpeed, oldDistance;
+int oldMinutes, oldHours,oldSeconds;
 boolean start = false;
 boolean detected = false;
-int hours, minutes;
+int hours, minutes,seconds;
 
 float diameter = 2.096f;
 
@@ -58,16 +59,16 @@ float diameter = 2.096f;
 
 void setup()
 {
-  Serial.begin(115200);
-  pinMode(2, INPUT_PULLUP); //Pin2 is connected to the reed switch
-  digitalWrite(2, HIGH); //Enable internal pull-up
-  attachInterrupt(0,Measurement,FALLING);
+  //Serial.begin(115200);
+  pinMode(3, INPUT_PULLUP); //Pin2 is connected to the reed switch
+  digitalWrite(3, HIGH); //Enable internal pull-up
+  //attachInterrupt(0,Measurement,FALLING);
   
   #if defined(ILI9340_RST_PIN)	// reset like Adafruit does
   FastPin<ILI9340_RST_PIN>::setOutput();
   FastPin<ILI9340_RST_PIN>::hi();
   FastPin<ILI9340_RST_PIN>::lo();
-  
+  millisVal = millis();
   delay(1);
   
   FastPin<ILI9340_RST_PIN>::hi();
@@ -75,6 +76,7 @@ void setup()
 
   tft.begin(); //Screen initialization
   InitializeScreen();
+  Display();
 
   /////////ACCELEROMETER////////
 //  Wire.begin();
@@ -88,22 +90,28 @@ void setup()
 
 
 void loop() {
+  millisVal2 = millis();
+    millisVal = millis();
+
+    int reading = digitalRead(3);
+    if(reading==LOW)
+    Measurement();
   //Measurement();  ///First we measure ; everything is done here.
   
-  if (millis() - lastRising > 6000 && start) {  ///To know if we are stopped
-    lastStopMillis = millis();
+  if (millisVal2 - lastRising > 6000 && start) {  ///To know if we are stopped
+    lastStopMillis = millisVal2;
     currentSpeed = 0.0;
     start = false;
-    Serial.println("A l'arret");
+    //Serial.println("A l'arret");
     Display();
   }
 
-  if (millis() - lastRising < 6000 && !start)  ///To know if we go again
+  if (millisVal2 - lastRising < 6000 && !start)  ///To know if we go again
   {
-    lastStartMillis = millis();
+    lastStartMillis = millisVal2;
     timeStoppped = timeStoppped + lastStartMillis - lastStopMillis;
     start = true;
-    Serial.println("C'est parti !!");
+    //Serial.println("C'est parti !!");
 
   }
 
@@ -111,23 +119,24 @@ void loop() {
 
 void Measurement()  ///Use the Hall effect sensor to measure
 {
-    
+    millisVal = millis();
+    lastDuration = millisVal - lastRising;
+    if(lastDuration > 60)
+    {
 
-    lastDuration = millis() - lastRising;
-    if(lastDuration > 60){
-    Serial.print("lastDuration : ");
-    Serial.println(lastDuration);
+    //Serial.print("lastDuration : ");
+    //Serial.println(lastDuration);
     //We have a measure so it's time to compute
     UpdateSpeed();  
     UpdateMeanSpeed();
     
-    if(millis()>timeToDisplay)
-    {
-      Display();
-      timeToDisplay = timeToDisplay + 5000;
+    //if(millis()>timeToDisplay)
+    //{
+     Display();
+     // timeToDisplay = timeToDisplay + 5000;
       //if(distance/1000000 > pgm_read_byte(&totalDistance))
       //totalDistance PROGMEM = pgm_read_byte(&totalDistance)+distance/1000000;
-    }
+    //}
 
     ///ACCELEROMETER///
 //    Wire.beginTransmission(MPU);
@@ -138,16 +147,18 @@ void Measurement()  ///Use the Hall effect sensor to measure
 //    GyX = Wire.read() << 8 | Wire.read(); // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
 //    GyY = Wire.read() << 8 | Wire.read(); // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
 //    GyZ = Wire.read() << 8 | Wire.read(); // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
-    lastRising = millis();
+    lastRising = millisVal;
+
     }
+
 }
 
 void UpdateSpeed()      ///Measure speed and distance
 { ////CALL BY INTERRUPTION
 
   currentSpeed = 3.6f* diameter / ((float)lastDuration/1000) ;
-  Serial.print("currentSpeed : ");
-  Serial.println(currentSpeed);
+  //Serial.print("currentSpeed : ");
+  //Serial.println(currentSpeed);
   distance = distance + diameter;
 }
 
@@ -155,14 +166,15 @@ void UpdateSpeed()      ///Measure speed and distance
 void UpdateMeanSpeed()  ///Compute average speed
 {
 
-  averageSpeed = 3600*(float)distance / (float)(millis() - timeStoppped);
+  averageSpeed = 3600*(float)distance / (float)(millisVal - timeStoppped);
 
 }
 
 void ComputeDuration()  ///Compute real time spent
 {
-float totalTime = millis() - timeStoppped;
+float totalTime = millisVal - timeStoppped;
 minutes = (totalTime/60000);
+seconds = ((totalTime/60000)-minutes)*60;
 if(minutes >= 60)
 {
   hours = (int)(totalTime/3600000);
@@ -219,19 +231,31 @@ void Display()  ///Display the dynamic things
   
   //DURATION VALUE
   ComputeDuration();
+  
   tft.setCursor(0,190);
   tft.setTextSize(4);
   tft.setTextColor(ILI9340_BLACK);
   tft.print(oldHours);
-  tft.setCursor(80,190);
+  tft.setCursor(55,190);
   tft.print(oldMinutes);
-  tft.setCursor(0,190);
+  tft.setTextSize(3);
+  tft.setCursor(165,195);
+  tft.print(oldSeconds);
+  tft.setTextSize(4);
   tft.setTextColor(ILI9340_GREEN);
+  tft.setCursor(0,190);
   tft.print(hours);
-  tft.setCursor(80,190);
+  tft.setCursor(55,190);
   tft.print(minutes);
+  
+  tft.setTextSize(3);
+  tft.setCursor(165,195);
+  tft.print(seconds);
+  tft.setTextSize(4);
+
   oldMinutes = minutes;
   oldHours = hours;
+  oldSeconds=seconds;
 
   //AVERAGE SPEED VALUE
   tft.setCursor(0,280);
@@ -253,17 +277,17 @@ void InitializeScreen()
   tft.fillScreen(ILI9340_BLACK);
 
   //SPEED
-  tft.setCursor(160, 20);
+  tft.setCursor(180, 20);
   tft.setTextSize(2);
   tft.setTextColor(ILI9340_WHITE);
-  tft.print(" km/h");
+  tft.print("km/h");
   
   //DISTANCE
   tft.setCursor(0, 60);
   tft.setTextSize(2);
   tft.setTextColor(ILI9340_WHITE);
   tft.print("Distance :");
-  tft.setCursor(170, 110);
+  tft.setCursor(180, 120);
   tft.print("km");
 
   //DURATION
@@ -271,14 +295,18 @@ void InitializeScreen()
   tft.setTextSize(2);
   tft.setTextColor(ILI9340_WHITE);
   tft.println("Duration :");
-  tft.setCursor(0,210);
-  tft.print("     h       min");
+  tft.setCursor(29,200);
+  tft.print("h");
+  tft.setCursor(115,200);
+  tft.print("min");
+  tft.setCursor(212,200);
+  tft.print("s");
   
   //AVERAGESPEED
   tft.setCursor(0, 240);
   tft.setTextSize(2);
   tft.setTextColor(ILI9340_WHITE);
   tft.println("Average speed :");
-  tft.setCursor(150,290);
+  tft.setCursor(180,290);
   tft.print("km/h");
 }

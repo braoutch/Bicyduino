@@ -1,5 +1,5 @@
 //////////////////////
-THIS IS THE OLD ONE///
+//THIS IS THE OLD ONE///
 //////////////////////
 
 // PDQ: create LCD object (using pins in "PDQ_LI9340_config.h")
