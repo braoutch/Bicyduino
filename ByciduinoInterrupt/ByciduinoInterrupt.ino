@@ -1,4 +1,3 @@
-
 //To store some data in SRAM
 #include <avr/pgmspace.h>
 
@@ -52,10 +51,7 @@ int oldMinutes, oldHours,oldSeconds;
 boolean start = false;
 boolean detected = false;
 int hours, minutes,seconds;
-
 float diameter = 2.096f;
-
-
 
 void setup()
 {
@@ -77,17 +73,7 @@ void setup()
   tft.begin(); //Screen initialization
   InitializeScreen();
   Display();
-
-  /////////ACCELEROMETER////////
-//  Wire.begin();
-//  Wire.beginTransmission(MPU);
-//  Wire.write(0x6B);  // PWR_MGMT_1 register
-//  Wire.write(0);     // set to zero (wakes up the MPU-6050)
-//  Wire.endTransmission(true);
-  /////////////////////////////
 }
-
-
 
 void loop() {
   millisVal2 = millis();
@@ -114,43 +100,21 @@ void loop() {
     //Serial.println("C'est parti !!");
 
   }
-
 }
 
 void Measurement()  ///Use the Hall effect sensor to measure
 {
     millisVal = millis();
     lastDuration = millisVal - lastRising;
-    if(lastDuration > 60)
+    if(lastDuration > 40)
     {
-
-    //Serial.print("lastDuration : ");
-    //Serial.println(lastDuration);
-    //We have a measure so it's time to compute
     UpdateSpeed();  
     UpdateMeanSpeed();
     
     //if(millis()>timeToDisplay)
-    //{
      Display();
-     // timeToDisplay = timeToDisplay + 5000;
-      //if(distance/1000000 > pgm_read_byte(&totalDistance))
-      //totalDistance PROGMEM = pgm_read_byte(&totalDistance)+distance/1000000;
-    //}
-
-    ///ACCELEROMETER///
-//    Wire.beginTransmission(MPU);
-//    Wire.write(0x41);  // starting with register 0x41 (ACCEL_XOUT_H)
-//    Wire.endTransmission(false);
-//    Wire.requestFrom(MPU, 8, true); // request a total of 2*4 registers
-//    Tmp = Wire.read() << 8 | Wire.read(); // 0x41 (TEMP_OUT_H) & 0x42 (TEMP_OUT_L)
-//    GyX = Wire.read() << 8 | Wire.read(); // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
-//    GyY = Wire.read() << 8 | Wire.read(); // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
-//    GyZ = Wire.read() << 8 | Wire.read(); // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
     lastRising = millisVal;
-
     }
-
 }
 
 void UpdateSpeed()      ///Measure speed and distance
@@ -162,12 +126,9 @@ void UpdateSpeed()      ///Measure speed and distance
   distance = distance + diameter;
 }
 
-
 void UpdateMeanSpeed()  ///Compute average speed
 {
-
   averageSpeed = 3600*(float)distance / (float)(millisVal - timeStoppped);
-
 }
 
 void ComputeDuration()  ///Compute real time spent
@@ -184,7 +145,6 @@ else
 {
   hours = 0;
 }
-
 }
 
 void Display()  ///Display the dynamic things
