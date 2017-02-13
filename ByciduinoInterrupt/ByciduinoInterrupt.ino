@@ -1,5 +1,5 @@
 //To store some data in SRAM
-#include <avr/pgmspace.h>
+//#include <avr/pgmspace.h>
 
 // PDQ: create LCD object (using pins in "PDQ_LI9340_config.h")
 
@@ -106,15 +106,16 @@ void Measurement()  ///Use the Hall effect sensor to measure
 {
     millisVal = millis();
     lastDuration = millisVal - lastRising;
-    if(lastDuration > 40)
+    if(lastDuration > 100)
     {
     UpdateSpeed();  
     UpdateMeanSpeed();
     
     //if(millis()>timeToDisplay)
      Display();
-    lastRising = millisVal;
     }
+        lastRising = millisVal;
+
 }
 
 void UpdateSpeed()      ///Measure speed and distance
